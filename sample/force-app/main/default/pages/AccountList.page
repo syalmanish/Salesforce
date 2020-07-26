@@ -1,0 +1,22 @@
+<apex:page standardController="Account" recordSetVar="records" id="accountList">
+
+  <apex:form >
+  
+    <apex:pageBlock >
+        <apex:pageBlockTable id="accountPageBlock" value="{!records}" var="account">
+          <apex:column >
+          
+              <apex:outputField value="{! account.name}" />
+              <apex:facet name="header"> name </apex:facet>
+          
+          </apex:column>
+        
+        
+        
+        </apex:pageBlockTable>    
+        
+    
+    </apex:pageBlock>
+  </apex:form>
+      
+</apex:page>

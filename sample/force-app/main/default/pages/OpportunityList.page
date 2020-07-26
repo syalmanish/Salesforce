@@ -1,0 +1,24 @@
+<apex:page standardController="Opportunity" id="OpportunityList" recordSetVar="records">
+
+   <apex:form >
+    
+    <apex:pageBlock >
+    
+        <apex:pageBlockTable id="oppTable" value="{!records}" var="opp">
+        
+         <apex:column >
+         
+           <apex:outputField value="{! opp.name}"/>
+           <apex:facet name="header"> Opportunity Name </apex:facet>
+         
+          </apex:column>
+        
+        
+        
+        </apex:pageBlockTable>
+    
+    </apex:pageBlock>
+   
+   </apex:form>
+  
+</apex:page>
