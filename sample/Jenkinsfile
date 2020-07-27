@@ -1,0 +1,64 @@
+#!groovy
+node {
+    def SF_CONSUMER_KEY=env.SF_CONSUMER_KEY
+    def SF_USERNAME=env.SF_USERNAME
+    def DEPLOYDIR='force-app'
+    def TEST_LEVEL='RunLocalTests'
+    def SF_INSTANCE_URL = env.SF_INSTANCE  ?: "https://login.salesforce.com"
+    def toolbelt = tool 'sfdx-toolbelt'
+    def JWT_KEY_CRED_ID = "${env.JWT_CRED_ID_DH}"
+    // -------------------------------------------------------------------------
+    // Check out code from source control.
+    // -------------------------------------------------------------------------
+    stage('checkout source') {
+        checkout scm
+    }
+    // -------------------------------------------------------------------------
+    // Run all the enclosed stages with access to the Salesforce
+    // JWT key credentials.
+    // -------------------------------------------------------------------------
+ 	withEnv(["HOME=${env.WORKSPACE}"]) {
+            withCredentials( [ file( credentialsId: JWT_KEY_CRED_ID, variable: 'jwt_key_file') ] ) {
+		// -------------------------------------------------------------------------
+		// Authenticate to Salesforce using the server key.force:auth:jwt:grant
+		// -------------------------------------------------------------------------
+                stage('Authorize to Salesforce') {
+                slackSend channel: '#devopsupdates', color: 'good', failOnError: true, message: "Build started ...", tokenCredentialId: 'slack-integration-token-credential'
+                    sh returnStatus: true, script: "cp ${jwt_key_file} ./server.key"
+                    echo("Authenticate To Server...")
+                    script {
+                        rc = sh returnStatus: true, script: "${toolbelt}/sfdx force:auth:jwt:grant --clientid ${SF_CONSUMER_KEY} --username ${SF_USERNAME} --jwtkeyfile /var/lib/jenkins/JWT/server.key --setalias QA --instanceurl ${SF_INSTANCE_URL}"
+                        if (rc != 0) {
+		            slackSend channel: '#devopsupdates', color: 'danger', failOnError: true, message: "Build autentication failed ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)", tokenCredentialId: 'slack-integration-token-credential'
+				error "hub org authorization failed"
+			}
+                    }
+                }
+	    // -------------------------------------------------------------------------
+		// Deploy metadata and execute unit tests. force:mdapi:deploy
+		// -------------------------------------------------------------------------
+		stage('Deploy without test') {
+        		   rc = command "${toolbelt}/sfdx force:source:deploy --wait 60 --targetusername ${SF_USERNAME}  --manifest manifest/package.xml --loglevel fatal"
+
+		    if (rc != 0) {
+	            slackSend channel: '#devopsupdates', color: 'danger', failOnError: true, message: "Build failed ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)", tokenCredentialId: 'slack-integration-token-credential'
+			error 'Salesforce deploy and test run failed.'
+		    }
+		   else {
+                   slackSend channel: '#devopsupdates', color: 'good', failOnError: true, message: "Build Completed  ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)", tokenCredentialId: 'slack-integration-token-credential'
+		   }
+
+		}
+
+     }
+
+	}
+}
+
+def command(script) {
+    if (isUnix()) {
+        return sh(returnStatus: true, script: script);
+    } else {
+		return bat(returnStatus: true, script: script);
+    }
+}
