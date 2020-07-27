@@ -1,0 +1,8 @@
+<template>
+    <div id="waiting" if:false={ready}> Loading...  </div>
+    <div id="display" if:true={ready}> 
+        <h2>  List of opportunity</h2>
+        <lightning-datatable data={data} columns ={columns} key-field="Id"></lightning-datatable>
+    </div>
+
+</template>
