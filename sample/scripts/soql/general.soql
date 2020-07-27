@@ -1,0 +1,17 @@
+// Add opportunity for the account that does not have oppportunity
+
+Trigger addOpportunity on Opportunity(before Insert, after Insert) {
+
+  // get the list of account that does not have opportunity from Trigger.New
+
+  List<Account> accountWithoutOpp =
+      [ select id, name from account where ID in Trigger.New and ID not in (select accountID from opportunity) ];
+
+      List<Opportunity> oppToBeAdded = new List<Opportunity>();
+      for(Account acct : accountWithoutOpp)
+      {
+          oppToBeAdded.add( new Opportunity(Name ='Added via code ', accountID=acct.Id, stageName ='Prospect'));
+      }
+
+      insert oppToBeAdded
+}
